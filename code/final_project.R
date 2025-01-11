@@ -16,9 +16,6 @@ packages <- c('tidyverse', 'ggplot2', 'ggrepel', 'ggalt', 'Rmisc', 'gridExtra',
 # Install and load packages
 lapply(packages, install_if_missing)
 
-# reading sample parquet file
-setwd("C:/Users/samid/OneDrive/Desktop/Adv Vis in R/final project")
-
 df <- read_parquet("full_data.parquet")
 
 # cols to convert to integer
