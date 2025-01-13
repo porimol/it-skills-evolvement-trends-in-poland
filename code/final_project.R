@@ -18,6 +18,9 @@ lapply(packages, install_if_missing)
 
 df <- read_parquet("full_data.parquet")
 
+# filter observation for only Poland
+df <- df %>% filter(country_code == 'PL')
+
 # cols to convert to integer
 integer_cols = c('b2b_from', 'b2b_to', 'permanent_from', 'permanent_to', 'mandate_from', 'mandate_to')
 
@@ -212,20 +215,5 @@ p <- ggplot(salary_data, aes(x = experience_level, y = b2b_range, color = b2b_cu
 
 # Display the plot
 print(p)
-
-
-# Prepare the data
-df_clean <- df %>%
-  filter(!is.na(b2b_from) & !is.na(b2b_to) & !is.na(experience_level))
-
-# Create the box plot with jitter
-ggplot(df_clean, aes(x = experience_level, y = b2b_from, color = b2b_currency)) +
-  geom_boxplot(outlier.colour = "red", outlier.size = 2, alpha = 0.5) +
-  geom_jitter(width = 0.1, alpha = 0.6) +
-  labs(title = "Salary Distribution by Experience Level and Currency",
-       x = "Experience Level", y = "Salary (From)") +
-  theme_minimal() +
-  theme(legend.position = "top") +
-  scale_color_manual(values = c("EUR" = "blue", "USD" = "green", "GBP" = "purple", "CHF" = "orange"))
 
 
