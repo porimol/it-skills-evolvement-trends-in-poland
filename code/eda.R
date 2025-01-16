@@ -45,7 +45,7 @@ jobs_data <- jobs_data %>%
 
 # Convert the 'published_date' column to Date type if it isn't already
 jobs_data$published_date <- as.Date(jobs_data$published_date)
-# Filter the data for the year 2023
+# Filter the data for the year 2022
 jobs_2022 <- jobs_data %>%
   filter(format(published_date, "%Y") == "2022")
 
