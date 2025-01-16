@@ -49,6 +49,8 @@ jobs_data$published_date <- as.Date(jobs_data$published_date)
 jobs_2022 <- jobs_data %>%
   filter(format(published_date, "%Y") == "2022")
 
+head(jobs_2022)
+
 # Check column names
 colnames(jobs_2022)
 
