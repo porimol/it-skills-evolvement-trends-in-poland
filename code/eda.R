@@ -349,4 +349,111 @@ ggplot(salary_data, aes(x = experience_level, y = avg_b2b_salary, fill = experie
   )
 
 
+head(jobs_2022)
+
+
+# 13. Top 15 skill: Average Salary for Junior Level 
+# Filter data for junior level
+junior_data <- jobs_2022 %>% filter(experience_level == 'junior')
+
+junior_top_skills_salary <- junior_data %>%
+  select(starts_with("skill_"), -ends_with("_level"), b2b_from) %>% # Exclude *_level columns
+  pivot_longer(cols = starts_with("skill_"),                      # Transform skill columns
+               values_drop_na = TRUE) %>%
+  group_by(value) %>%                                              # Group by skill names
+  summarize(average_salary = mean(b2b_from, na.rm = TRUE),         # Calculate average salary
+            .groups = "drop") %>%
+  arrange(desc(average_salary)) %>%                               # Sort by salary
+  slice_head(n = 15)
+
+# Bar plot for top 15 skills and their average salaries
+ggplot(junior_top_skills_salary, aes(x = reorder(value, average_salary), y = average_salary, fill = average_salary)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  scale_fill_gradient(low = "lightblue", high = "darkblue", name = "Salary (PLN)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(
+    title = "Top 15 Skills: Average Salary for Junior Level",
+    x = "Skill",
+    y = "Average Salary (PLN)"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)
+  )
+
+
+# 14. Top 15 skill: Average Salary for Mid Level 
+# Filter data for junior level
+mid_data <- jobs_2022 %>% filter(experience_level == 'mid')
+
+mid_top_skills_salary <- mid_data %>%
+  select(starts_with("skill_"), -ends_with("_level"), b2b_from) %>% # Exclude *_level columns
+  pivot_longer(cols = starts_with("skill_"),                      # Transform skill columns
+               values_drop_na = TRUE) %>%
+  group_by(value) %>%                                              # Group by skill names
+  summarize(average_salary = mean(b2b_from, na.rm = TRUE),         # Calculate average salary
+            .groups = "drop") %>%
+  arrange(desc(average_salary)) %>%                               # Sort by salary
+  slice_head(n = 15)
+
+# Bar plot for top 15 skills and their average salaries
+ggplot(mid_top_skills_salary, aes(x = reorder(value, average_salary), y = average_salary, fill = average_salary)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  scale_fill_gradient(low = "lightblue", high = "darkblue", name = "Salary (PLN)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(
+    title = "Top 15 Skills: Average Salary for Mid Level",
+    x = "Skill",
+    y = "Average Salary (PLN)"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)
+  )
+
+
+# 15. Top 15 skill: Average Salary for Semnior Level 
+# Filter data for junior level
+senior_data <- jobs_2022 %>% filter(experience_level == 'senior')
+senior_top_skills_salary <- senior_data %>%
+  select(starts_with("skill_"), -ends_with("_level"), b2b_from) %>% # Exclude *_level columns
+  pivot_longer(cols = starts_with("skill_"),                      # Transform skill columns
+               values_drop_na = TRUE) %>%
+  group_by(value) %>%                                              # Group by skill names
+  summarize(average_salary = mean(b2b_from, na.rm = TRUE),         # Calculate average salary
+            .groups = "drop") %>%
+  arrange(desc(average_salary)) %>%                               # Sort by salary
+  slice_head(n = 15)
+
+# Bar plot for top 15 skills and their average salaries
+ggplot(senior_top_skills_salary, aes(x = reorder(value, average_salary), y = average_salary, fill = average_salary)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  scale_fill_gradient(low = "lightblue", high = "darkblue", name = "Salary (PLN)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(
+    title = "Top 15 Skills: Average Salary for Senior Level",
+    x = "Skill",
+    y = "Average Salary (PLN)"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)
+  )
+
+
 
