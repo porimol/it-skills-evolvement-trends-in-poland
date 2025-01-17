@@ -86,6 +86,7 @@ ggplot(jobs_2022, aes(x = experience_level, fill = experience_level)) +
   geom_bar() +
   theme_minimal() +
   scale_fill_brewer(palette = "Set2") +
+  scale_y_continuous(labels = scales::comma) + 
   labs(
     title = "Job Offers by Experience Level",
     x = "Experience Level",
