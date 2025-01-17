@@ -7,6 +7,8 @@ library(leaflet)
 library(wordcloud)
 library(tm)
 library(scales)
+library(treemapify)
+
 
 # Load the Dataset
 jobs_data <- read_parquet("full_data.parquet")
@@ -86,7 +88,6 @@ ggplot(jobs_2022, aes(x = experience_level, fill = experience_level)) +
   geom_bar() +
   theme_minimal() +
   scale_fill_brewer(palette = "Set2") +
-  scale_y_continuous(labels = scales::comma) + 
   labs(
     title = "Job Offers by Experience Level",
     x = "Experience Level",
@@ -179,9 +180,9 @@ monthly_data <- jobs_2022 %>%
   summarize(job_postings = n(), .groups = "drop")
 
 # Create bar plot with a line showing the trend, and text labels on top of each bar
-ggplot(monthly_data, aes(x = month, y = job_postings, fill = month)) +
+p <- ggplot(monthly_data, aes(x = month, y = job_postings, fill = month)) +
   geom_bar(stat = "identity", show.legend = FALSE) +  # Bar plot without legend for fill
-  geom_line(aes(group = 1), color = "blue", size = 1, linetype = "dashed") +  # Add trend line
+  geom_line(aes(group = 1), color = "blue", linewidth = 1, linetype = "dashed") +  # Add trend line
   # geom_text(aes(label = scales::comma(job_postings)), vjust = -0.5, size = 3) +
   geom_text(aes(label = scales::comma(job_postings)), 
             fontface = "bold",  # Make the text bold
@@ -201,6 +202,8 @@ ggplot(monthly_data, aes(x = month, y = job_postings, fill = month)) +
     axis.title.x = element_text(size = 12),
     axis.title.y = element_text(size = 12)
   )
+
+ggsave("monthly_posting_with_trend_line.png", plot = p, width = 10, height = 14, dpi = 300)
 
 
 # 7. Company Size Distribution
@@ -225,21 +228,31 @@ company_size_data <- jobs_2022 %>%
   mutate(percentage = n / sum(n) * 100)
 
 # Pie chart with percentage labels
-ggplot(company_size_data, aes(x = "", y = n, fill = company_size_category)) +
+
+p2 <- ggplot(company_size_data, aes(x = "", y = n, fill = company_size_category)) +
   geom_bar(stat = "identity", width = 1) +
-  coord_polar(theta = "y") + 
+  coord_polar(theta = "y") +
   theme_minimal() +
-  labs(title = "Company Size Distribution", fill = "Company Size Category") +
+  labs(
+    title = "Company Size Distribution",
+    fill = "Company Size Category",
+    caption = "Company size definitions:\nSmall: ≤ 50 employees\nMedium: ≤ 250 employees\nLarge: ≤ 1000 employees\nEnterprise: > 1000 employees"
+  ) +
   theme(
     plot.title = element_text(hjust = 0.5, size = 14),
     axis.text.x = element_blank(),  # Hide axis text
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
-    legend.position = "right"
+    legend.position = "right",
+    plot.caption = element_text(hjust = 0, size = 10, color = "black")
   ) +
   geom_text(aes(label = paste0(round(percentage, 1), "%")),
             position = position_stack(vjust = 0.5), size = 5) +
   scale_fill_brewer(palette = "Set3")
+
+
+plot(p2)
+ggsave("pie_chart_of_company_size.png", plot = p2, width = 10, height = 10, dpi = 300)
 
 
 # 9. Remote Interviews Availability
@@ -298,7 +311,7 @@ salary_data <- jobs_2022 %>%
   )
 
 # Box Plot: Salary Distribution by Experience Level
-ggplot(salary_data, aes(x = experience_level, y = avg_b2b_salary, fill = experience_level)) +
+p4 <- ggplot(salary_data, aes(x = experience_level, y = avg_b2b_salary, fill = experience_level)) +
   geom_boxplot(outlier.color = "red", outlier.shape = 16) +
   scale_y_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma, trans = "log10") +
@@ -318,6 +331,10 @@ ggplot(salary_data, aes(x = experience_level, y = avg_b2b_salary, fill = experie
     legend.position = "none"
   )
 
+plot(p4)
+
+ggsave("b2b_salary_range_by_exp.png", plot = p4, width = 10, height = 10, dpi = 300)
+
 
 # 12. B2B salary distribution by experience level
 # Filter and clean salary data
@@ -330,7 +347,7 @@ salary_data <- jobs_2022 %>%
   )
 
 # Create Violin Plot with log scale for better visualization
-ggplot(salary_data, aes(x = experience_level, y = avg_b2b_salary, fill = experience_level)) +
+p5 <- ggplot(salary_data, aes(x = experience_level, y = avg_b2b_salary, fill = experience_level)) +
   geom_violin(trim = FALSE, alpha = 0.7) +
   scale_y_continuous(labels = scales::comma, trans = "log10") +  # Log-scale transformation
   theme_minimal() +
@@ -349,112 +366,69 @@ ggplot(salary_data, aes(x = experience_level, y = avg_b2b_salary, fill = experie
     legend.position = "none"
   )
 
+plot(p5)
 
-head(jobs_2022)
+ggsave("b2b_salary_range_by_exp_log_scale.png", plot = p5, width = 10, height = 10, dpi = 300)
 
 
-# 13. Top 15 skill: Average Salary for Junior Level 
-# Filter data for junior level
-junior_data <- jobs_2022 %>% filter(experience_level == 'junior')
 
-junior_top_skills_salary <- junior_data %>%
-  select(starts_with("skill_"), -ends_with("_level"), b2b_from) %>% # Exclude *_level columns
-  pivot_longer(cols = starts_with("skill_"),                      # Transform skill columns
-               values_drop_na = TRUE) %>%
-  group_by(value) %>%                                              # Group by skill names
-  summarize(average_salary = mean(b2b_from, na.rm = TRUE),         # Calculate average salary
-            .groups = "drop") %>%
-  arrange(desc(average_salary)) %>%                               # Sort by salary
-  slice_head(n = 15)
+# Skills treemap by job level
 
-# Bar plot for top 15 skills and their average salaries
-ggplot(junior_top_skills_salary, aes(x = reorder(value, average_salary), y = average_salary, fill = average_salary)) +
-  geom_bar(stat = "identity") +
-  coord_flip() +
-  scale_fill_gradient(low = "lightblue", high = "darkblue", name = "Salary (PLN)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  labs(
-    title = "Top 15 Skills: Average Salary for Junior Level",
-    x = "Skill",
-    y = "Average Salary (PLN)"
+library(treemapify)
+library(stringr)
+
+skills_data <- jobs_data %>%
+  pivot_longer(
+    cols = c("skill_1", "skill_2", "skill_3"),
+    names_to = "skill_type", 
+    values_to = "skill"
+  ) %>%
+  filter(!is.na(skill)) %>% # Remove NA skills
+  mutate(
+    skill = str_replace_all(skill, "[^[:alnum:]\\s]", ""), 
+    skill = str_squish(skill) 
+  ) %>%
+  group_by(experience_level, skill) %>% 
+  summarise(skill_count = n(), .groups = 'drop') %>% 
+  arrange(experience_level, desc(skill_count))
+
+skills_data_1 <- skills_data %>% 
+  filter(skill_count > 1000, !is.na(skill), !is.na(experience_level)) %>%
+  group_by(experience_level) %>%
+  slice_max(skill_count, n = 50) %>%
+  ungroup()
+
+
+# treemap
+p7 <- ggplot(skills_data_1, aes(
+  area = skill_count,
+  fill = skill_count,
+  label = skill
+)) +
+  geom_treemap() +
+  geom_treemap_text(
+    colour = "white",
+    place = "centre",
+    size = 15
   ) +
+  scale_fill_viridis_c(
+    labels = label_number(scale = 1e-6, suffix = " mln") # Convert to millions
+  ) + 
+  facet_wrap(~experience_level) + 
+  theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, size = 14),
-    axis.text.x = element_text(size = 10),
-    axis.text.y = element_text(size = 10),
-    axis.title.x = element_text(size = 12),
-    axis.title.y = element_text(size = 12)
+    strip.text = element_text(
+      face = "bold",  
+      size = 16       
+    )
+  ) +
+  labs(
+    title = "Demanding Skills by Experience Level",
+    subtitle = "Treemap displaying most demanding skills for each level of experience",
+    fill = "Skill Count"
   )
 
 
-# 14. Top 15 skill: Average Salary for Mid Level 
-# Filter data for junior level
-mid_data <- jobs_2022 %>% filter(experience_level == 'mid')
+plot(p7)
 
-mid_top_skills_salary <- mid_data %>%
-  select(starts_with("skill_"), -ends_with("_level"), b2b_from) %>% # Exclude *_level columns
-  pivot_longer(cols = starts_with("skill_"),                      # Transform skill columns
-               values_drop_na = TRUE) %>%
-  group_by(value) %>%                                              # Group by skill names
-  summarize(average_salary = mean(b2b_from, na.rm = TRUE),         # Calculate average salary
-            .groups = "drop") %>%
-  arrange(desc(average_salary)) %>%                               # Sort by salary
-  slice_head(n = 15)
-
-# Bar plot for top 15 skills and their average salaries
-ggplot(mid_top_skills_salary, aes(x = reorder(value, average_salary), y = average_salary, fill = average_salary)) +
-  geom_bar(stat = "identity") +
-  coord_flip() +
-  scale_fill_gradient(low = "lightblue", high = "darkblue", name = "Salary (PLN)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  labs(
-    title = "Top 15 Skills: Average Salary for Mid Level",
-    x = "Skill",
-    y = "Average Salary (PLN)"
-  ) +
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 14),
-    axis.text.x = element_text(size = 10),
-    axis.text.y = element_text(size = 10),
-    axis.title.x = element_text(size = 12),
-    axis.title.y = element_text(size = 12)
-  )
-
-
-# 15. Top 15 skill: Average Salary for Semnior Level 
-# Filter data for junior level
-senior_data <- jobs_2022 %>% filter(experience_level == 'senior')
-senior_top_skills_salary <- senior_data %>%
-  select(starts_with("skill_"), -ends_with("_level"), b2b_from) %>% # Exclude *_level columns
-  pivot_longer(cols = starts_with("skill_"),                      # Transform skill columns
-               values_drop_na = TRUE) %>%
-  group_by(value) %>%                                              # Group by skill names
-  summarize(average_salary = mean(b2b_from, na.rm = TRUE),         # Calculate average salary
-            .groups = "drop") %>%
-  arrange(desc(average_salary)) %>%                               # Sort by salary
-  slice_head(n = 15)
-
-# Bar plot for top 15 skills and their average salaries
-ggplot(senior_top_skills_salary, aes(x = reorder(value, average_salary), y = average_salary, fill = average_salary)) +
-  geom_bar(stat = "identity") +
-  coord_flip() +
-  scale_fill_gradient(low = "lightblue", high = "darkblue", name = "Salary (PLN)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  labs(
-    title = "Top 15 Skills: Average Salary for Senior Level",
-    x = "Skill",
-    y = "Average Salary (PLN)"
-  ) +
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 14),
-    axis.text.x = element_text(size = 10),
-    axis.text.y = element_text(size = 10),
-    axis.title.x = element_text(size = 12),
-    axis.title.y = element_text(size = 12)
-  )
-
-
-
+ggsave("skills_treemap.png", plot = p7, width = 20, height = 13, dpi = 300)
